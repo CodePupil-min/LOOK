@@ -215,6 +215,41 @@ window.onload=function(){
         saver.save([search_mode.state,timer.state]);
     }
 
+    //链接栏
+    var linktb={
+        top:document.getElementById("linktb"),//主窗口
+        button:document.getElementById('link_add'),//添加按钮
+        state:0,
+        links:{
+            '教务平台':['https://jwgl.ustb.edu.cn/','./img/ustb.jpg'],
+            'mooc':['https://www.icourse163.org/','./img/mooc.jpg'],
+            '雨课堂':['https://www.yuketang.cn/web','./img/ykt.jpg'],
+            'bilibili':['https://www.bilibili.com/','./img/bilibili.jpg'],
+        },
+        init:function(){
+            let links=this.links;
+            for(k in links){
+                let ndiv=document.createElement('div');
+                ndiv.className='link';
+                ndiv.innerHTML="<a href="+links[k][0]+"><img src="+links[k][1]+">"+k+"</a>";
+                this.top.insertBefore(ndiv,this.button);
+            }
+            this.state==0?this.close():this.open();
+        },
+        close:function(){
+            this.top.style.display='none';
+            this.state=0;
+        },
+        open:function(){
+            this.top.style.display='flex';
+            this.state=1;
+        }
+    }
+    linktb.init();
+    document.getElementById("mine").onclick=function(){
+        linktb.state==0?linktb.open():linktb.close();
+    }
+
     //时钟
     printClock();
     window.setInterval(printClock,1000);
@@ -241,14 +276,14 @@ window.onload=function(){
     }
 
     // 设置随机背景色
-    // var bs=document.body.style;
-    // setBodyColor(bs);
-    // function setBodyColor(bs){
-    //     let color1=randomColor();
-    //     let color2=randomColor();
-    //     let deg=Math.floor(Math.random()*360);
-    //     bs.backgroundImage='linear-gradient('+deg+'deg,'+color1+','+color2+')';
-    // }
+    var bs=document.body.style;
+    setBodyColor(bs);
+    function setBodyColor(bs){
+        let color1=randomColor();
+        let color2=randomColor();
+        let deg=Math.floor(Math.random()*360);
+        bs.backgroundImage='linear-gradient('+deg+'deg,'+color1+','+color2+')';
+    }
     //返回随机颜色十六进制
     function randomColor(){
         let s='#';

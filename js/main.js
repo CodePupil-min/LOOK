@@ -3,8 +3,9 @@ window.onload=function(){
         /*状态表
             0->搜索引擎:0 bing、1 baidu、2 google
             1->是否显示时间:0不显示、1显示
+            2->背景样式:0图片、1纯色、2渐变色
         */
-        state:[0,1],
+        state:[0,1,0,0,0,0],
         //搜索引擎
         surl : "https://cn.bing.com/search?q=",   
         //更新状态表
@@ -39,42 +40,52 @@ window.onload=function(){
     //同步状态表
     PageSet.readCookie();
 
-
-    //设置鼠标点到搜索框里时的事件   
-    document.getElementById("content").onfocus=function(){
-        let content_box=document.getElementById("content");
-        this.onkeydown=function(e){
-            let content=content_box.value;
-            if(e.key=="Enter") {
-                window.location.href=search(PageSet.surl,content);
-            }    
-        }
-        //设置搜索框所在的div的style
-        document.getElementById("search").style="opacity:100%;transform: translateY(-30vh);";
-    }
-
-    // 清除鼠标点到搜索框里时的事件
-    document.getElementById("content").onblur=function(){
-        this.onkeydown = null;
-        document.getElementById("search").style="opacity:40%;transform: translateY(0vh);"; 
-    }
-    
-    //搜索按钮事件
-    delTextChildNode(document.getElementById("search"))[1].onclick=function(){
-        let content=document.getElementById("content").value;
-        window.location.href=search(PageSet.surl,content);
-    }
-    //搜索
-    function search(surl,value,mode){
-        return surl+value;
-    }
-
     //清除按钮点击的效果
     document.onclick=function(){
         menu_card.close();
         date_card.close();
         show_slist.close();
+        show_styles.close();
     }
+
+    //搜索事件
+    var search_box={
+        top:document.getElementById("search"),//整体
+        content_box:document.getElementById("content"),//搜索框
+        sbtn:delTextChildNode(document.getElementById("search"))[1],//搜索按钮
+        state:0,
+        close:function(){
+            this.top.style="opacity:40%;transform: translateY(0vh);";
+            this.state=0;
+            onkeydown = null;
+            //点击按钮搜索
+            this.sbtn.onclick=function(){
+                search_box.search();
+            }
+        },
+        open:function(){
+            this.top.style="opacity:100%;transform: translateY(-30vh);";
+            this.state=1;
+            //键盘回车搜索
+            onkeydown=function(e){
+                if(e.key=="Enter") {
+                    search_box.search();
+                }    
+            }
+        },
+        search:function(){
+            let content=this.content_box.value;
+            window.location.href=PageSet.surl+content;
+        }
+    }
+    document.getElementById("content").onfocus=function(){
+        search_box.open();
+    }
+    document.getElementById("content").onblur=function(){
+        search_box.close();
+    }
+
+
 
     //menu
     var menu_card={
@@ -124,7 +135,7 @@ window.onload=function(){
         }
     }
 
-    //开关时间
+    //开关右上角时间
     var timer={
         button:document.getElementById("show_time"),
         control1:document.getElementById("show_time").getElementsByClassName('right')[0],//按键图标
@@ -202,17 +213,25 @@ window.onload=function(){
         button:document.getElementById("save"),
         control1:document.getElementById("save").getElementsByClassName('right')[0],//按键图标
         state:0,
-        save:function(states){
+        save:function(){
             //样式部分
             this.control1.innerHTML="<i class='bi bi-check2-all'></i>";
             //逻辑部分
-            PageSet.updateState(states);
-            PageSet.writeCookie();
+            PageSet.updateState(this.getState());//更新状态表
+            PageSet.writeCookie();//写入cookie
             this.state=0;
         },
+        getState:function(){
+            return [
+                search_mode.state,
+                timer.state,
+                back_style.state,
+                0,0,0
+            ]
+        }
     }    
     document.getElementById("save").onclick=function(){
-        saver.save([search_mode.state,timer.state]);
+        saver.save();
     }
 
     //链接栏
@@ -221,10 +240,11 @@ window.onload=function(){
         button:document.getElementById('link_add'),//添加按钮
         state:0,
         links:{
-            '教务平台':['https://jwgl.ustb.edu.cn/','./img/ustb.jpg'],
-            'mooc':['https://www.icourse163.org/','./img/mooc.jpg'],
-            '雨课堂':['https://www.yuketang.cn/web','./img/ykt.jpg'],
-            'bilibili':['https://www.bilibili.com/','./img/bilibili.jpg'],
+            '教务平台':['https://jwgl.ustb.edu.cn/','./img/tb/ustb.jpg'],
+            'mooc':['https://www.icourse163.org/','./img/tb/mooc.jpg'],
+            '雨课堂':['https://www.yuketang.cn/web','./img/tb/ykt.jpg'],
+            'bilibili':['https://www.bilibili.com/','./img/tb/bilibili.jpg'],
+            'github':['https://github.com/','./img/tb/github.jpg']
         },
         init:function(){
             let links=this.links;
@@ -250,6 +270,65 @@ window.onload=function(){
         linktb.state==0?linktb.open():linktb.close();
     }
 
+    //背景样式
+    var show_styles={
+        button:delTextChildNode(document.getElementById("show_styles"))[0],
+        control1:document.getElementById("show_styles").getElementsByClassName('right')[0],//按键图标
+        control2:document.getElementById('styles'),//背景列表
+        state:0,
+        close:function(){
+            this.control1.innerHTML="<i class='bi bi-chevron-compact-down'></i>";
+            this.control2.style='display:none';
+            this.state=0;
+        },
+        open:function(){
+            this.control1.innerHTML="<i class='bi bi-chevron-compact-up'></i>";
+            this.control2.style='display:block';
+            this.state=1;
+        }
+    };
+    var back_style={
+        buttons:delTextChildNode(document.getElementById("styles")),
+        state:PageSet.getState(2),
+        init:function(){
+            this.choose(this.state);
+        },
+        choose:function(i){
+            for(let i=0;i<this.buttons.length;i++)
+                this.buttons[i].style.color='black';
+            this.buttons[i].style.color='blue';
+            this.state=i;
+            this.setStyle(i);
+        },
+        setStyle:function(i){
+            let bs=document.body.style;
+            if(i==0)
+                bs.backgroundImage="url('../img/bj/2.jpg')";
+            else if(i==1){
+                bs.backgroundImage="none";
+                bs.backgroundColor=randomColor();
+            }
+            else{
+                let color1=randomColor();
+                let color2=randomColor();
+                let deg=Math.floor(Math.random()*360);
+                bs.backgroundImage='linear-gradient('+deg+'deg,'+color1+','+color2+')';
+            }
+
+        }
+    };
+    back_style.init();
+    document.getElementById("show_styles").onclick=function(event){
+        let path = event.path || (event.composedPath && event.composedPath());
+        if(path.includes(show_styles.button)){
+            show_styles.state==1?show_styles.close():show_styles.open();
+        }
+        for(let i=0;i<back_style.buttons.length;i++){
+            if(event.target==back_style.buttons[i])
+                back_style.choose(i);
+        }  
+    }
+
     //时钟
     printClock();
     window.setInterval(printClock,1000);
@@ -269,22 +348,12 @@ window.onload=function(){
         let clk2=delTextChildNode(document.getElementById('clock'))[1];
         clk2.innerHTML=t['year']+'.'+pZ(t['month'])+'.'+pZ(t['day'])+
                         ' '+pZ(t['hour'])+':'+pZ(t['min'])+':'+pZ(t['sec'])+
-                        '<br> week'+t['dayW'];
+                        '<br>';
         function pZ(num){
             return num>9?num:'0'+num;
         }
     }
 
-    // 设置随机背景色
-    var bs=document.body.style;
-    setBodyColor(bs);
-    function setBodyColor(bs){
-        let color1=randomColor();
-        let color2=randomColor();
-        let deg=Math.floor(Math.random()*360);
-        bs.backgroundImage='linear-gradient('+deg+'deg,'+color1+','+color2+')';
-    }
-    //返回随机颜色十六进制
     function randomColor(){
         let s='#';
         for(let i=0;i<6;i++){
